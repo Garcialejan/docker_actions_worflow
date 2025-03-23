@@ -1,6 +1,5 @@
 name: CI/CD for Dockerized FastAPI app
 
-# Trigger the workflow on any push to the main branch or pull request
 on:
   push:
     branches: [main]
@@ -8,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  builds-and-test:
+  builds-and-test: # Build python app and tested it
     runs-on: ubuntu-latest
 
     steps:
@@ -31,22 +30,32 @@ jobs:
       run: |
         pytest
 
-build-and-publish:
-    needs: build_and_test
-    runs-on: ubuntu-latest
+  build-and-publish: # Build the docker image and publish into DockerHub
+      needs: builds-and-test
+      runs-on: ubuntu-latest
 
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v4
- 
-    - name: Set up Docker Build
-      uses: docker/setup-buildx-action@v3
+      steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+  
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v3
 
-    - name: Loging to DockerHUB
-      uses: docker/login-action@v2
-      with:
+      - name: Loging to DockerHUB
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }} #Secret token added to GitHUB
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Build and push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
 
+      - name: Image digest
+        run: echo ${{ steps.build-and-publish.outputs.digest }}
 
 
 
